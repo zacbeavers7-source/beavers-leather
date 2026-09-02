@@ -10,7 +10,7 @@ body {
 }
 
 header {
-    height: 80px;
+    height: 90px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -19,8 +19,22 @@ header {
 }
 
 .logo {
-    font-size: 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo-img {
+    height: 90px;
+    width: auto;
+    display: block;
+}
+
+.logo-text {
+    color: #f2e8d5;
+    font-size: 30px;
     font-weight: bold;
+    white-space: nowrap;
 }
 
 nav {
@@ -39,7 +53,7 @@ nav a:hover {
 }
 
 .hero {
-    min-height: calc(100vh - 80px);
+    min-height: calc(100vh - 99px);
 
     display: flex;
     flex-direction: column;
