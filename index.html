@@ -7,6 +7,25 @@
 
     <title>Beaver's Leather | Custom Leather Goods</title>
     <link rel="stylesheet" href="style.css">
+<style>
+.gallery-carousel { position:relative; max-width:1200px; margin:32px auto 0; padding:0 42px; }
+.gallery-track { display:flex; gap:18px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; scrollbar-width:none; padding:6px 0 12px; }
+.gallery-track::-webkit-scrollbar { display:none; }
+.gallery-track img { flex:0 0 calc((100% - 36px)/3); width:calc((100% - 36px)/3); height:310px; object-fit:cover; border-radius:12px; cursor:zoom-in; scroll-snap-align:start; }
+.gallery-arrow { position:absolute; top:45%; transform:translateY(-50%); z-index:2; width:40px; height:48px; border:1px solid #a97846; border-radius:8px; background:#201710; color:#f4e5cd; font-size:24px; cursor:pointer; }
+.gallery-prev { left:0; } .gallery-next { right:0; }
+.gallery-arrow:hover { background:#754b2a; }
+.gallery-hint { text-align:center; opacity:.75; margin-top:12px; }
+.gallery-lightbox[hidden] { display:none; }
+.gallery-lightbox { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.94); display:flex; align-items:center; justify-content:center; gap:14px; padding:55px 15px; }
+.lightbox-photo { max-width:calc(100vw - 125px); max-height:calc(100vh - 110px); object-fit:contain; }
+.lightbox-close,.lightbox-prev,.lightbox-next { background:rgba(45,32,22,.9); color:white; border:1px solid #b48b62; border-radius:8px; cursor:pointer; font-size:26px; padding:10px 15px; }
+.lightbox-close { position:absolute; top:15px; right:20px; font-size:34px; }
+.lightbox-count { position:absolute; bottom:15px; color:white; font-size:14px; }
+@media(max-width:800px) { .gallery-track img { flex-basis:calc((100% - 18px)/2); width:calc((100% - 18px)/2); height:270px; } }
+@media(max-width:540px) { .gallery-carousel { padding:0 34px; } .gallery-track img { flex-basis:100%; width:100%; height:330px; } .gallery-arrow { width:30px; } .lightbox-photo { max-width:calc(100vw - 100px); } .lightbox-prev,.lightbox-next { padding:8px; } }
+@media(prefers-reduced-motion:reduce) { .gallery-track { scroll-behavior:auto; } }
+</style>
 </head>
 
 <body>
@@ -126,20 +145,25 @@
         </span>
     </div>
 
-    <div class="gallery-grid">
-
-        <img src="images/leather1.jpg" alt="Custom leather work by Beaver's Leather">
-
-        <img src="images/leather2.jpeg" alt="Custom leather work by Beaver's Leather">
-
-        <img src="images/leather3.jpeg" alt="Custom leather work by Beaver's Leather">
-
-        <img src="images/leather4.JPG" alt="Custom leather work by Beaver's Leather">
-
-        <img src="images/leather5.jpeg" alt="Custom leather work by Beaver's Leather">
-
-        <img src="images/leather6.jpeg" alt="Custom leather work by Beaver's Leather">
-
+    <div class="gallery-carousel" aria-label="Leatherwork photo gallery">
+        <button class="gallery-arrow gallery-prev" type="button" aria-label="Previous photos">&#10094;</button>
+        <div class="gallery-track" id="gallery-track" tabindex="0" aria-label="Swipe or scroll through photos">
+            <img src="images/leather1.jpg" alt="Handcrafted leatherwork" loading="lazy">
+            <img src="images/leather2.jpeg" alt="Handcrafted leatherwork" loading="lazy">
+            <img src="images/leather3.jpeg" alt="Handcrafted leatherwork" loading="lazy">
+            <img src="images/leather4.JPG" alt="Handcrafted leatherwork" loading="lazy">
+            <img src="images/leather5.jpeg" alt="Handcrafted leatherwork" loading="lazy">
+            <img src="images/leather6.jpeg" alt="Handcrafted leatherwork" loading="lazy">
+        </div>
+        <button class="gallery-arrow gallery-next" type="button" aria-label="Next photos">&#10095;</button>
+    </div>
+    <p class="gallery-hint">Scroll to explore more work. Click any photo to enlarge it.</p>
+    <div class="gallery-lightbox" id="gallery-lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" hidden>
+        <button type="button" class="lightbox-close" aria-label="Close photo viewer">&times;</button>
+        <button type="button" class="lightbox-prev" aria-label="Previous photo">&#10094;</button>
+        <img class="lightbox-photo" alt="Enlarged handmade leatherwork">
+        <button type="button" class="lightbox-next" aria-label="Next photo">&#10095;</button>
+        <span class="lightbox-count" aria-live="polite"></span>
     </div>
 
 </section>
@@ -370,6 +394,59 @@
 
     </main>
 
+<script>
+(() => {
+ const track=document.getElementById('gallery-track');
+ const viewer=document.getElementById('gallery-lightbox');
+ const photo=viewer.querySelector('.lightbox-photo');
+ const counter=viewer.querySelector('.lightbox-count');
+ const fallback=Array.from(track.querySelectorAll('img')).map(img=>({src:img.getAttribute('src'),name:img.getAttribute('src').split('/').pop()}));
+ let images=fallback, current=0, timer;
+ const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ function render(items) {
+   images=items;
+   track.replaceChildren(...items.map(item=>{
+     const img=document.createElement('img');
+     img.src=item.src; img.alt='Beaver\'s Leather custom work: '+item.name.replace(/\.[^.]+$/,'').replace(/[-_]/g,' ');
+     img.loading='lazy'; img.addEventListener('click',()=>openPhoto(items.indexOf(item)));
+     return img;
+   }));
+ }
+ function step(direction) {
+   const first=track.querySelector('img'); if(!first)return;
+   const distance=first.getBoundingClientRect().width+18;
+   const max=track.scrollWidth-track.clientWidth;
+   if(direction>0 && track.scrollLeft>=max-5)track.scrollTo({left:0,behavior:reduceMotion?'instant':'smooth'});
+   else if(direction<0 && track.scrollLeft<=5)track.scrollTo({left:max,behavior:reduceMotion?'instant':'smooth'});
+   else track.scrollBy({left:direction*distance,behavior:reduceMotion?'instant':'smooth'});
+ }
+ function showPhoto() { photo.src=images[current].src; photo.alt='Beaver\'s Leather custom work'; counter.textContent=(current+1)+' / '+images.length; }
+ function openPhoto(i) { current=i;showPhoto();viewer.hidden=false;document.body.style.overflow='hidden';stop();viewer.querySelector('.lightbox-close').focus(); }
+ function closePhoto() { viewer.hidden=true;document.body.style.overflow='';start(); }
+ function movePhoto(d) { current=(current+d+images.length)%images.length;showPhoto(); }
+ function stop(){clearInterval(timer);}
+ function start(){stop();if(!reduceMotion)timer=setInterval(()=>{if(!document.hidden && viewer.hidden)step(1)},4000);}
+ document.querySelector('.gallery-prev').addEventListener('click',()=>{step(-1);start();});
+ document.querySelector('.gallery-next').addEventListener('click',()=>{step(1);start();});
+ viewer.querySelector('.lightbox-close').addEventListener('click',closePhoto);
+ viewer.querySelector('.lightbox-prev').addEventListener('click',()=>movePhoto(-1));
+ viewer.querySelector('.lightbox-next').addEventListener('click',()=>movePhoto(1));
+ viewer.addEventListener('click',e=>{if(e.target===viewer)closePhoto();});
+ document.addEventListener('keydown',e=>{if(viewer.hidden)return;if(e.key==='Escape')closePhoto();if(e.key==='ArrowLeft')movePhoto(-1);if(e.key==='ArrowRight')movePhoto(1);});
+ track.addEventListener('mouseenter',stop);track.addEventListener('mouseleave',start);
+ track.addEventListener('focusin',stop);track.addEventListener('focusout',start);
+ track.addEventListener('touchstart',stop,{passive:true});track.addEventListener('touchend',start,{passive:true});
+ render(fallback);start();
+ // The GitHub repository is public; discover newly uploaded photos automatically.
+ fetch('https://api.github.com/repos/zacbeavers7-source/beavers-leather/contents/images?ref=main',{headers:{Accept:'application/vnd.github+json'}})
+ .then(r=>{if(!r.ok)throw Error('Photo listing unavailable');return r.json();})
+ .then(files=>{
+   const photos=files.filter(f=>f.type==='file' && /\.(jpe?g|png|webp|gif)$/i.test(f.name) && !/^logo\./i.test(f.name))
+     .map(f=>({src:'images/'+encodeURIComponent(f.name),name:f.name}));
+   if(photos.length)render(photos);
+ }).catch(()=>{ /* Keep original photos when the listing service is unavailable. */ });
+})();
+</script>
 </body>
 
 </html>
