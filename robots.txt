@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://zacbeavers7-source.github.io/beavers-leather/sitemap.xml
