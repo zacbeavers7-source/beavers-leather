@@ -53,6 +53,14 @@
 @media(prefers-reduced-motion:reduce) { .gallery-track { scroll-behavior:auto; } }
 
 .product-card h3 a { color:inherit; text-decoration:underline; text-decoration-color:#a97846; text-underline-offset:5px; }
+.gallery-request {position:absolute;bottom:45px;left:50%;transform:translateX(-50%);background:#b98a56;color:#18110b;border:0;border-radius:8px;padding:12px 18px;font-weight:700;cursor:pointer;white-space:nowrap;max-width:90vw;}
+.gallery-lightbox .lightbox-count {bottom:12px;}
+.quote-reference[hidden]{display:none}
+.quote-reference{display:flex;align-items:center;gap:15px;max-width:700px;margin:15px auto 25px;padding:14px;border:1px solid #a97846;border-radius:10px;background:#241b14;color:#f4e5cd}
+.quote-reference img{width:100px;height:100px;object-fit:cover;border-radius:6px}
+.quote-reference p{overflow-wrap:anywhere;font-size:13px;margin:6px 0}
+.quote-reference button{background:none;color:#e6b67e;border:1px solid #a97846;border-radius:5px;padding:6px 10px;cursor:pointer}
+@media(max-width:540px){.gallery-request{font-size:13px;padding:10px 12px}.quote-reference img{width:75px;height:75px}}
 </style>
 </head>
 
@@ -185,13 +193,14 @@
         </div>
         <button class="gallery-arrow gallery-next" type="button" aria-label="Next photos">&#10095;</button>
     </div>
-    <p class="gallery-hint">Scroll to explore more work. Click any photo to enlarge it.</p>
+    <p class="gallery-hint">Previously commissioned custom work. Every piece is individually designed and quoted. Click a photo to explore or request something similar.</p>
     <div class="gallery-lightbox" id="gallery-lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" hidden>
         <button type="button" class="lightbox-close" aria-label="Close photo viewer">&times;</button>
         <button type="button" class="lightbox-prev" aria-label="Previous photo">&#10094;</button>
         <img class="lightbox-photo" alt="Enlarged handmade leatherwork">
         <button type="button" class="lightbox-next" aria-label="Next photo">&#10095;</button>
         <span class="lightbox-count" aria-live="polite"></span>
+        <button type="button" class="gallery-request">Request Something Similar</button>
     </div>
 
 </section>
@@ -300,6 +309,8 @@
         </span>
     </div>
 
+    <div class="quote-reference" id="quote-reference" hidden><img id="quote-reference-image" alt="Selected previous leather project"><div><strong>Inspired by a previous project</strong><p id="quote-reference-label"></p><button type="button" id="quote-reference-clear">Remove reference</button></div></div>
+
     <form
     class="quote-form"
     action="https://formsubmit.co/beavers.leather1@gmail.com"
@@ -307,6 +318,7 @@
     enctype="multipart/form-data"
 >
 
+    <input type="hidden" id="project-reference" name="inspiration_project_url" value="">
     <input
         type="hidden"
         name="_subject"
@@ -428,6 +440,11 @@
  const viewer=document.getElementById('gallery-lightbox');
  const photo=viewer.querySelector('.lightbox-photo');
  const counter=viewer.querySelector('.lightbox-count');
+ const referenceField=document.getElementById('project-reference');
+ const referenceBox=document.getElementById('quote-reference');
+ const referenceImage=document.getElementById('quote-reference-image');
+ const referenceLabel=document.getElementById('quote-reference-label');
+ const details=document.getElementById('details');
  const fallback=Array.from(track.querySelectorAll('img')).map(img=>({src:img.getAttribute('src'),name:img.getAttribute('src').split('/').pop()}));
  let images=fallback, current=0, timer;
  const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -452,6 +469,20 @@
  function openPhoto(i) { current=i;showPhoto();viewer.hidden=false;document.body.style.overflow='hidden';stop();viewer.querySelector('.lightbox-close').focus(); }
  function closePhoto() { viewer.hidden=true;document.body.style.overflow='';start(); }
  function movePhoto(d) { current=(current+d+images.length)%images.length;showPhoto(); }
+ function requestSimilar(){
+   const item=images[current];
+   const url=new URL(item.src,document.baseURI).href;
+   referenceField.value=url;
+   referenceImage.src=url;
+   referenceLabel.textContent='Reference photo: '+item.name;
+   referenceBox.hidden=false;
+   if(!details.value.trim())details.value='I saw this piece in your portfolio and would like to discuss a similar custom project. I understand it will be individually designed and quoted.\\n\\nMy preferred changes or details: ';
+   closePhoto();
+   document.getElementById('quote').scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'});
+   details.focus({preventScroll:true});
+ }
+ viewer.querySelector('.gallery-request').addEventListener('click',requestSimilar);
+ document.getElementById('quote-reference-clear').addEventListener('click',()=>{referenceField.value='';referenceBox.hidden=true;referenceImage.removeAttribute('src');referenceLabel.textContent='';});
  function stop(){clearInterval(timer);}
  function start(){stop();if(!reduceMotion)timer=setInterval(()=>{if(!document.hidden && viewer.hidden)step(1)},4000);}
  document.querySelector('.gallery-prev').addEventListener('click',()=>{step(-1);start();});
